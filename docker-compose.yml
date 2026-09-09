@@ -1,0 +1,83 @@
+name: snowtv
+
+services:
+  snow-engine:
+    build:
+      context: ./engine
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      SNOW_DATA_DIR: /data
+      SNOW_API_TOKEN: ${SNOW_API_TOKEN:-}
+      SNOW_CORS_ORIGINS: ${SNOW_CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000,http://localhost:4173,http://127.0.0.1:4173}
+      SNOW_PERFORMANCE_PROFILE: ${SNOW_PERFORMANCE_PROFILE:-auto}
+      SNOW_WHISPER_MODEL: ${SNOW_WHISPER_MODEL:-auto}
+      SNOW_WHISPER_DEVICE: cpu
+      SNOW_WHISPER_COMPUTE_TYPE: ${SNOW_WHISPER_COMPUTE_TYPE:-int8}
+      SNOW_LLM_PROVIDER: ${SNOW_LLM_PROVIDER:-heuristic}
+      SNOW_LLM_API_KEY: ${SNOW_LLM_API_KEY:-}
+      SNOW_LLM_BASE_URL: ${SNOW_LLM_BASE_URL:-https://api.openai.com/v1}
+      SNOW_LLM_MODEL: ${SNOW_LLM_MODEL:-}
+      SNOW_VIDEO_ENCODER: ${SNOW_VIDEO_ENCODER:-auto}
+      SNOW_VIDEO_PRESET: ${SNOW_VIDEO_PRESET:-auto}
+      SNOW_ANALYSIS_WIDTH: ${SNOW_ANALYSIS_WIDTH:-0}
+      SNOW_CACHE_ENABLED: ${SNOW_CACHE_ENABLED:-true}
+      SNOW_YTDLP_FORMAT: ${SNOW_YTDLP_FORMAT:-bv*+ba/b}
+      SNOW_YTDLP_FALLBACK_FORMAT: ${SNOW_YTDLP_FALLBACK_FORMAT:-b[height<=1080][ext=mp4]/b[height<=1080]/b/bv*+ba}
+      SNOW_YTDLP_FALLBACK_PLAYER_CLIENTS: ${SNOW_YTDLP_FALLBACK_PLAYER_CLIENTS:-default,-web_safari}
+      SNOW_YTDLP_JS_RUNTIME: ${SNOW_YTDLP_JS_RUNTIME:-auto}
+      SNOW_YTDLP_JS_RUNTIME_PATH: ${SNOW_YTDLP_JS_RUNTIME_PATH:-}
+      SNOW_YTDLP_REMOTE_COMPONENTS: ${SNOW_YTDLP_REMOTE_COMPONENTS:-false}
+      SNOW_MAX_UPLOAD_MB: ${SNOW_MAX_UPLOAD_MB:-4096}
+      SNOW_MAX_VIDEO_MINUTES: ${SNOW_MAX_VIDEO_MINUTES:-240}
+    volumes:
+      - ./engine/data:/data
+      - snow-model-cache:/home/snow/.cache/huggingface
+
+  snow-engine-gpu:
+    profiles: ["gpu"]
+    build:
+      context: ./engine
+      dockerfile: Dockerfile.cuda
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      SNOW_DATA_DIR: /data
+      SNOW_API_TOKEN: ${SNOW_API_TOKEN:-}
+      SNOW_CORS_ORIGINS: ${SNOW_CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000,http://localhost:4173,http://127.0.0.1:4173}
+      SNOW_PERFORMANCE_PROFILE: ${SNOW_PERFORMANCE_PROFILE:-quality}
+      SNOW_WHISPER_MODEL: ${SNOW_WHISPER_MODEL:-auto}
+      SNOW_WHISPER_DEVICE: cuda
+      SNOW_WHISPER_COMPUTE_TYPE: float16
+      SNOW_LLM_PROVIDER: ${SNOW_LLM_PROVIDER:-heuristic}
+      SNOW_LLM_API_KEY: ${SNOW_LLM_API_KEY:-}
+      SNOW_LLM_BASE_URL: ${SNOW_LLM_BASE_URL:-https://api.openai.com/v1}
+      SNOW_LLM_MODEL: ${SNOW_LLM_MODEL:-}
+      SNOW_VIDEO_ENCODER: ${SNOW_VIDEO_ENCODER:-h264_nvenc}
+      SNOW_VIDEO_PRESET: ${SNOW_VIDEO_PRESET:-auto}
+      SNOW_ANALYSIS_WIDTH: ${SNOW_ANALYSIS_WIDTH:-0}
+      SNOW_CACHE_ENABLED: ${SNOW_CACHE_ENABLED:-true}
+      SNOW_YTDLP_FORMAT: ${SNOW_YTDLP_FORMAT:-bv*+ba/b}
+      SNOW_YTDLP_FALLBACK_FORMAT: ${SNOW_YTDLP_FALLBACK_FORMAT:-b[height<=1080][ext=mp4]/b[height<=1080]/b/bv*+ba}
+      SNOW_YTDLP_FALLBACK_PLAYER_CLIENTS: ${SNOW_YTDLP_FALLBACK_PLAYER_CLIENTS:-default,-web_safari}
+      SNOW_YTDLP_JS_RUNTIME: ${SNOW_YTDLP_JS_RUNTIME:-auto}
+      SNOW_YTDLP_JS_RUNTIME_PATH: ${SNOW_YTDLP_JS_RUNTIME_PATH:-}
+      SNOW_YTDLP_REMOTE_COMPONENTS: ${SNOW_YTDLP_REMOTE_COMPONENTS:-false}
+      SNOW_MAX_UPLOAD_MB: ${SNOW_MAX_UPLOAD_MB:-4096}
+      SNOW_MAX_VIDEO_MINUTES: ${SNOW_MAX_VIDEO_MINUTES:-240}
+    volumes:
+      - ./engine/data:/data
+      - snow-model-cache:/home/snow/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+volumes:
+  snow-model-cache:
