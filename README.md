@@ -74,13 +74,15 @@ SnowTV/
 │   ├── snow_engine/         # pipeline, API, jobs, tracking e render
 │   ├── tests/               # testes automatizados do backend
 │   └── data/                # ignorado pelo Git; jobs, caches e SQLite
-├── db/                      # persistência usada pela interface
+├── db/                      # persistência local da interface
 ├── worker/                  # entry point da interface
 ├── docs/                    # screenshots, validação e testes
 └── tests/                   # testes do frontend/contratos
 ```
 
 A interface envia um job ao **Snow Engine**. O backend executa as etapas pesadas em CPU, mantém o estado localmente e devolve progresso, logs e resultados pela API.
+
+A persistência da interface usa um banco local D1/SQLite. Em uma instalação nova, a estrutura necessária é criada automaticamente na primeira utilização, evitando um passo manual de migração apenas para abrir e usar a aplicação localmente.
 
 ## Stack
 
@@ -100,6 +102,7 @@ A interface envia um job ao **Snow Engine**. O backend executa as etapas pesadas
 - TypeScript
 - Next/Vinext
 - Vite
+- Drizzle ORM
 
 ### Execução
 
@@ -160,7 +163,7 @@ Set-ExecutionPolicy -Scope Process Bypass
 .\start-snowtv.ps1
 ```
 
-O launcher prepara a `.venv` quando necessário, instala dependências Node na primeira execução, inicia FastAPI e frontend e abre a interface no navegador.
+O launcher prepara a `.venv` quando necessário, instala dependências Node na primeira execução, inicia FastAPI e frontend e abre a interface no navegador. A persistência local da interface também é preparada automaticamente quando a aplicação é usada pela primeira vez.
 
 ## Desempenho validado
 
