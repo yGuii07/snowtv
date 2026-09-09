@@ -1,11 +1,17 @@
 import { and, desc, eq } from "drizzle-orm";
-import { getDb } from "@/db";
+import { ensureDbSchema, getDb } from "@/db";
 import { projects } from "@/db/schema";
+
+async function readyDb() {
+  await ensureDbSchema();
+  return getDb();
+}
 
 export async function GET(request: Request) {
   const ownerEmail = "local-user";
   try {
-    const rows = await getDb()
+    const db = await readyDb();
+    const rows = await db
       .select()
       .from(projects)
       .where(and(eq(projects.ownerEmail, ownerEmail)))
@@ -42,6 +48,7 @@ type ProjectMutation = {
 export async function POST(request: Request) {
   const ownerEmail = "local-user";
   try {
+    const db = await readyDb();
     const body = (await request.json()) as ProjectMutation;
     const id = body.id?.trim() ?? "";
     if (!/^[a-zA-Z0-9_-]{6,160}$/.test(id)) {
@@ -49,12 +56,12 @@ export async function POST(request: Request) {
     }
 
     if (body.action === "delete") {
-      await getDb().delete(projects).where(and(eq(projects.id, id), eq(projects.ownerEmail, ownerEmail)));
+      await db.delete(projects).where(and(eq(projects.id, id), eq(projects.ownerEmail, ownerEmail)));
       return Response.json({ ok: true, id });
     }
 
     if (body.action === "update") {
-      await getDb()
+      await db
         .update(projects)
         .set({
           title: body.title?.slice(0, 180),
@@ -72,7 +79,8 @@ export async function POST(request: Request) {
     if (!/^[a-zA-Z0-9_-]{6,160}$/.test(engineJobId) || !sourceUrl) {
       return Response.json({ error: "Dados do projeto incompletos." }, { status: 400 });
     }
-    await getDb()
+
+    await db
       .insert(projects)
       .values({
         id,
@@ -93,6 +101,7 @@ export async function POST(request: Request) {
           updatedAt: new Date().toISOString(),
         },
       });
+
     return Response.json({ ok: true, id }, { status: 201 });
   } catch (error) {
     console.error("SnowTV project mutation failed", error);
