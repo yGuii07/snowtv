@@ -2,49 +2,37 @@
 
 **Gerador local de cortes verticais para Shorts, Reels e TikTok.**
 
-O SnowTV transforma vídeos longos em cortes 9:16 prontos para redes sociais usando um pipeline local de processamento. O objetivo é oferecer uma alternativa self-hosted a ferramentas que cobram por minuto, mantendo controle sobre os arquivos, caches e renderizações.
+O SnowTV transforma vídeos longos em cortes 9:16 prontos para redes sociais usando um pipeline local de processamento. A proposta é oferecer uma alternativa self-hosted a ferramentas que cobram por minuto, mantendo controle sobre arquivos, caches e renderizações.
 
 O projeto combina **Python, FastAPI, React/TypeScript, faster-whisper, OpenCV, FFmpeg e yt-dlp**. O fluxo principal funciona sem API paga; integrações com LLM compatível com OpenAI ou Ollama são opcionais.
 
-> **Status:** fluxo principal validado em Windows com processamento local em CPU. A suíte automatizada do backend possui **40 testes aprovados**. Veja [Validação](docs/testing/VALIDATION.md).
+> **Status:** fluxo principal validado em Windows com processamento local em CPU. A suíte automatizada do backend possui **40 testes aprovados**.
 
-## Demonstração
+## Demonstração real
 
-### Novo corte
+### Resultado gerado pelo SnowTV
 
-![Tela inicial do SnowTV](docs/screenshots/home.jpg)
+O vídeo abaixo foi criado pelo próprio pipeline do projeto: seleção automática do trecho, tracking facial, reenquadramento para 9:16, legendas dinâmicas e render final.
 
-### Motor local
+[![Assistir ao resultado real gerado pelo SnowTV](docs/screenshots/resultado-final.jpg)](docs/demo/snowtv-demo.mp4)
 
-O Snow Engine detecta hardware, perfil recomendado e dependências antes do processamento.
+**[▶ Assistir ao vídeo completo](docs/demo/snowtv-demo.mp4)**
 
-![Motor local conectado](docs/screenshots/motor-local.jpg)
+**Saída validada:** 1080 × 1920, 30 fps.
 
-### Pipeline em execução
+### Interface
 
-O progresso do job é persistido e exibido por etapa, do download/transcrição até reenquadramento, legendas e render.
+| Novo corte | Motor local |
+| --- | --- |
+| ![Tela inicial](docs/screenshots/home.jpg) | ![Motor local](docs/screenshots/motor-local.jpg) |
 
-![Processamento em andamento](docs/screenshots/processamento.jpg)
+| Processamento | Cortes gerados |
+| --- | --- |
+| ![Pipeline em execução](docs/screenshots/processamento.jpg) | ![Resultados](docs/screenshots/cortes-gerados.jpg) |
 
 ### Editor de legendas
 
-Presets visuais permitem ajustar estilo sem refazer a transcrição.
-
 ![Editor de estilos de legenda](docs/screenshots/estilos-legenda.jpg)
-
-### Cortes gerados
-
-Os resultados exibem duração, contexto, métricas editoriais e `Clip Score`.
-
-![Cortes gerados pelo SnowTV](docs/screenshots/cortes-gerados.jpg)
-
-### Saída final 9:16
-
-Render real validado em **1080 × 1920, 30 fps**, com reenquadramento e legendas dinâmicas.
-
-<p align="center">
-  <img src="docs/screenshots/resultado-final.jpg" alt="Exemplo de corte vertical final" width="280">
-</p>
 
 ## O que o SnowTV faz
 
@@ -53,14 +41,13 @@ Render real validado em **1080 × 1920, 30 fps**, com reenquadramento e legendas
 - transcreve falas com timestamps por palavra usando `faster-whisper`;
 - identifica trechos com maior potencial editorial;
 - reduz cortes repetitivos por similaridade temporal e semântica;
-- ajusta início e fim com base em pontuação e pausas;
-- acompanha rostos e reenquadra automaticamente para 9:16;
-- aplica fallback para crop central quando o tracking não é confiável;
+- ajusta automaticamente início e fim dos cortes;
+- acompanha rostos e reenquadra para 9:16;
+- usa crop central como fallback quando o tracking não é confiável;
 - gera legendas ASS animadas e personalizáveis;
-- permite estilos editoriais e presets de legenda;
+- oferece presets e editor visual de legendas;
 - renderiza H.264/AAC com FFmpeg;
-- persiste jobs e feedbacks em SQLite;
-- reutiliza caches de mídia, transcrição, seleção, proxy e tracking;
+- persiste jobs e reaproveita caches;
 - permite cancelar, retomar e rerenderizar jobs sem refazer etapas válidas.
 
 ## Pipeline
@@ -89,15 +76,15 @@ SnowTV/
 │   └── data/                # ignorado pelo Git; jobs, caches e SQLite
 ├── db/                      # persistência usada pela interface
 ├── worker/                  # entry point da interface
-├── docs/                    # validação, testes e histórico
+├── docs/                    # screenshots, validação e testes
 └── tests/                   # testes do frontend/contratos
 ```
 
-A interface envia um job ao **Snow Engine**. O backend executa as etapas pesadas em CPU, persiste o estado localmente e devolve progresso, logs e resultados pela API.
+A interface envia um job ao **Snow Engine**. O backend executa as etapas pesadas em CPU, mantém o estado localmente e devolve progresso, logs e resultados pela API.
 
 ## Stack
 
-### Backend / processamento
+### Backend e processamento
 
 - Python 3.11/3.12
 - FastAPI
@@ -114,45 +101,38 @@ A interface envia um job ao **Snow Engine**. O backend executa as etapas pesadas
 - Next/Vinext
 - Vite
 
-### Infraestrutura e execução
+### Execução
 
-- Docker (CPU)
+- Windows via PowerShell
+- Docker CPU
 - perfil NVIDIA opcional
-- scripts PowerShell para Windows
 - cache local de pipeline
 
-## Recursos técnicos relevantes
+## Recursos técnicos
 
 ### Seleção editorial
 
-O Editorial Engine usa ranking explicável com componentes como hook, contexto, conclusão, clareza, emoção, novidade, ritmo, compartilhamento e qualidade de boundary. A seleção final combina qualidade e diversidade para reduzir clipes semanticamente repetitivos.
+O Editorial Engine usa ranking com componentes como hook, contexto, conclusão, clareza, emoção, novidade, ritmo e qualidade de boundary. A seleção final combina qualidade e diversidade para reduzir cortes semanticamente repetitivos.
 
 ### Tracking e reenquadramento
 
-O pipeline usa proxy leve para análise facial, redetecção periódica, tracking entre detecções, smoothing e reset após mudanças fortes de cena. Quando não há tracking confiável, o job continua com crop central seguro em vez de falhar.
+O pipeline usa proxy leve para análise facial, redetecção periódica, tracking entre detecções, smoothing e reset após mudanças fortes de cena. Quando o tracking não é confiável, o job continua com crop central seguro em vez de falhar.
 
 ### Legendas
 
-As legendas finais são renderizadas em ASS/libass. Há presets, destaque por palavra, safe zones, controle de fonte, tamanho, posição, contorno, fundo, cores e efeitos. O pipeline inclui quebra por largura e limite de linhas para evitar texto fora da área segura.
+As legendas finais são renderizadas em ASS/libass, com presets, destaque por palavra, safe zones, controle de fonte, tamanho, posição, contorno, fundo, cores e efeitos.
+
+Durante o teste real foi identificado e corrigido um caso em que o **título de gancho e a legenda dinâmica apareciam juntos no início**. A regra atual dá prioridade visual ao gancho e só libera a legenda dinâmica depois que ele termina.
 
 ### Cache e retomada
 
-O SnowTV reaproveita artefatos válidos entre execuções:
-
-- mídia e URLs;
-- metadados;
-- transcrição;
-- seleção editorial;
-- proxies;
-- tracking.
-
-Isso permite ajustar legenda, enquadramento ou cortes sem retranscrever o vídeo inteiro. Jobs podem ser cancelados e retomados usando o estado persistido.
+O SnowTV reaproveita mídia, metadados, transcrição, seleção editorial, proxies e tracking. Isso permite alterar legenda, enquadramento ou cortes sem retranscrever o vídeo inteiro.
 
 ## API principal do Snow Engine
 
 | Método | Endpoint | Finalidade |
 | --- | --- | --- |
-| `GET` | `/health` | hardware, versões e dependências |
+| `GET` | `/health` | hardware e dependências |
 | `GET` | `/api/capabilities` | capacidades e presets |
 | `POST` | `/api/process` | processar URL |
 | `POST` | `/api/process/upload` | processar upload |
@@ -163,89 +143,43 @@ Isso permite ajustar legenda, enquadramento ou cortes sem retranscrever o vídeo
 | `POST` | `/api/jobs/{job_id}/resume` | retomar job |
 | `DELETE` | `/api/jobs/{job_id}` | remover job e saídas |
 
-A documentação completa do motor está em [engine/README.md](engine/README.md).
-
-## Instalação no Windows
+## Início rápido no Windows
 
 ### Requisitos
 
 - Windows 10/11;
 - Python 3.11 ou 3.12;
-- Node.js compatível com o projeto;
+- Node.js 22.13 ou superior;
 - FFmpeg e FFprobe no `PATH`;
-- Deno opcional, recomendado para alguns fluxos do YouTube.
+- Deno opcional para alguns fluxos do YouTube.
 
-### 1. Preparar o motor
-
-No PowerShell:
-
-```powershell
-cd .\engine
-.\setup-windows.ps1
-```
-
-Nas próximas execuções:
-
-```powershell
-cd .\engine
-.\run-local.ps1
-```
-
-Confirme o backend em:
-
-```text
-http://127.0.0.1:8000/health
-```
-
-### 2. Iniciar a interface
-
-Em outro PowerShell, na raiz do projeto:
-
-```powershell
-npm.cmd install
-npm.cmd run dev
-```
-
-Abra o endereço exibido pelo Vite, normalmente `http://localhost:5173`.
-
-## Início rápido no Windows
-
-Depois de instalar os pré-requisitos, a forma mais simples de iniciar o projeto é pela raiz:
+Na raiz do projeto:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass
 .\start-snowtv.ps1
 ```
 
-O script:
+O launcher prepara a `.venv` quando necessário, instala dependências Node na primeira execução, inicia FastAPI e frontend e abre a interface no navegador.
 
-- prepara a `.venv` do backend caso ainda não exista;
-- instala as dependências Node caso `node_modules` ainda não exista;
-- inicia FastAPI e o frontend;
-- abre a interface no navegador;
-- encerra os processos filhos quando o launcher é finalizado.
+## Desempenho validado
 
-## Perfil de desempenho usado no desenvolvimento
+O fluxo principal foi testado em uma máquina sem GPU NVIDIA dedicada:
 
-A versão atual foi pensada para funcionar também sem GPU dedicada. No Ryzen 5 4600G com 16 GB de RAM, o perfil `AUTO` seleciona uma configuração balanceada.
-
-| Item | Configuração de referência |
+| Item | Configuração |
 | --- | --- |
+| CPU | Ryzen 5 4600G |
+| RAM | 16 GB |
 | Whisper | `small` |
 | Dispositivo | CPU |
 | Compute | `int8` |
 | Threads Whisper | 8 |
-| Threads FFmpeg | 6 |
-| Jobs pesados | 1 |
-| Proxy facial | 640 px |
-| Encoder padrão | `libx264` |
+| Encoder | `libx264` |
 | Saída | 1080 × 1920, 30 fps |
 
-Também existem perfis `ECO`, `BALANCED`, `QUALITY` e `AUTO`.
+No teste real, um job com cinco cortes concluiu download, transcrição, seleção, tracking e render localmente.
 
 ## Testes e validação
-
-Comandos principais:
 
 ```bash
 PYTHONPATH=engine python3 -m unittest discover -s engine/tests -v
@@ -254,45 +188,47 @@ npx tsc --noEmit
 npm test
 ```
 
-Na auditoria técnica mais recente:
+Resultados registrados:
 
 ```text
-Python: 40 testes descobertos; 40 aprovados
+Python: 40 testes aprovados
 TypeScript: OK
 ESLint: OK
 Frontend build: OK
 Node tests: 2 OK
 ```
 
-Esses resultados estão documentados em [docs/testing/VALIDATION.md](docs/testing/VALIDATION.md). O fluxo principal também foi validado manualmente no Windows com vídeo real; o checklist completo permanece em [docs/testing/MANUAL_TEST_WINDOWS.md](docs/testing/MANUAL_TEST_WINDOWS.md).
+Veja os detalhes em [docs/testing/VALIDATION.md](docs/testing/VALIDATION.md).
 
-## Privacidade e segurança
+## Privacidade
 
 - processamento principal local;
 - nenhuma API paga obrigatória;
 - `.env`, caches, jobs, outputs e banco local são ignorados pelo Git;
-- token da API pode ficar vazio em localhost;
-- para uso em rede, configure token, HTTPS, firewall e CORS restrito;
-- chaves de provedores opcionais devem ficar apenas em `.env`.
+- chaves opcionais devem permanecer apenas em `.env`;
+- para uso em rede, configure token, HTTPS, firewall e CORS restrito.
 
 ## Limitações atuais
 
-- o tracking automático ainda depende da qualidade e composição do vídeo;
-- split automático com duas pessoas precisa de mais validação em vídeos reais;
-- cancelamento de processos externos é cooperativo e ocorre em pontos seguros;
-- o preview de legenda é visual e não é pixel-perfect em relação ao libass;
-- cancelamento e retomada continuam como cenários recomendados para validação manual recorrente.
+- tracking depende da composição e qualidade do vídeo;
+- split automático com duas pessoas ainda precisa de mais validação real;
+- cancelamento de processos externos ocorre de forma cooperativa;
+- preview de legenda não é pixel-perfect em relação ao libass;
+- cancelamento e retomada ainda merecem mais testes manuais recorrentes.
 
 ## Roadmap
 
-- ampliar validação com vídeos reais e múltiplos interlocutores;
-- medir tempo e consumo de RAM em diferentes perfis;
+- ampliar testes com múltiplos interlocutores;
+- medir consumo de RAM e tempo em diferentes perfis;
 - melhorar tracking e decisão automática de split;
-- expandir testes end-to-end;
+- expandir testes end-to-end.
 
-## Histórico
+## Documentação
 
-Consulte [CHANGELOG.md](CHANGELOG.md) para o histórico de mudanças e [`docs/testing`](docs/testing/) para o roteiro de validação.
+- [Arquitetura](docs/ARCHITECTURE.md)
+- [Validação](docs/testing/VALIDATION.md)
+- [Teste manual no Windows](docs/testing/MANUAL_TEST_WINDOWS.md)
+- [Histórico de mudanças](CHANGELOG.md)
 
 ---
 
