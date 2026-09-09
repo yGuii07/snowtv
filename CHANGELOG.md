@@ -6,10 +6,14 @@
 - render final confirmado em 1080x1920 a 30 fps;
 - correção de sobreposição entre título de gancho e legenda dinâmica;
 - suíte automatizada do backend ampliada para 40 testes aprovados;
-- README atualizado com screenshots reais do fluxo.
+- README atualizado com screenshots e demonstração real em vídeo;
+- persistência local da interface preparada automaticamente na primeira utilização;
+- configuração residual de ambiente removida da raiz pública do projeto.
 
 ## Correções e melhorias recentes
 
+- inicialização automática da tabela de projetos no banco local da interface;
+- remoção da dependência de `.openai/hosting.json` na configuração do Vite;
 - melhorias de quebra de linha e limite de linhas em legendas para respeitar a área segura;
 - ajustes em títulos automáticos para reduzir repetições;
 - melhorias no fluxo de cancelamento e retomada de jobs;
